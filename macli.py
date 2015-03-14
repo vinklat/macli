@@ -6,35 +6,37 @@ import argparse
 import json
 import pprint
 
-def get_apps():
-  apps=[]
-  c = MarathonClient(environ['MARATHON'])
-  for app in c.list_apps():
-    apps.append(app.id)
-  return apps
-
-def get_apps_hosts():
-  apps={} # key: appid ; value: [ hostnames ]
-  hosts={} # key: hostname; value: [ appids ]
-
-  c = MarathonClient(environ['MARATHON'])
-  for app in c.list_apps():
-    apps[app.id]=[]
-    for task in c.get_app(app.id).tasks:
-      apps[app.id].append(task.host)
-      if not task.host in hosts:
-        hosts[task.host]=[]
-      hosts[task.host].append(app.id)
-
-  return [ apps, hosts ]
-
 
 def app_get(id):
   c = MarathonClient(environ['MARATHON'])
   a=c.get_app(id)
   x=a.to_json()
   return(json.loads(x))
+
+def apps_get():
+  apps=[]
+  c = MarathonClient(environ['MARATHON'])
+  for app in c.list_apps():
+    apps.append(app.id)
+  return apps
+
+def apps_detailed_get():
+  apps={}
+  c = MarathonClient(environ['MARATHON'])
+  for app in c.list_apps():
+    apps[app.id]=app_get(app.id)
+  return apps
   
+def hosts_get():
+  hosts={}
+  c = MarathonClient(environ['MARATHON'])
+  for app in c.list_apps():
+    for task in c.get_app(app.id).tasks:
+      host = task.host
+      if not host in hosts:
+        hosts[host]=[]
+      hosts[host].append(app)
+  return hosts
 
 def app_create( json_data ):
   c = MarathonClient(environ['MARATHON'])
@@ -66,8 +68,10 @@ if __name__ == '__main__':
   parser_app = subparsers.add_parser('app', help='manage marathon apps')
   subparsers_app = parser_app.add_subparsers(dest='app_command', title='app_command')
   parser_app_list = subparsers_app.add_parser('list', help='list running apps')
-  parser_app_list.add_argument('-t', action='store_true', help='include marathon tasks')
+  parser_app_list.add_argument('-m', action='store_true', help='include mesos task ids')
   parser_app_list.add_argument('-H', action='store_true', help='include mesos-slave hosts')
+  parser_app_list.add_argument('-p', action='store_true', help='include host ports')
+  parser_app_list.add_argument('-A', action='store_true', help='show all info')
 
   parser_app_create = subparsers_app.add_parser('create', help='create and start an app')
   parser_app_create.add_argument('json_file', help='json format app config')
@@ -86,38 +90,75 @@ if __name__ == '__main__':
 
   parser_app_get = subparsers_app.add_parser('get', help='get and view a single app')
   parser_app_get.add_argument('id', help='marathon app id')
+  parser_app_get.add_argument('-d', action='store_true', help='show detailed info')
 
   parser_hosts= subparsers.add_parser('hosts', help='list mesos-slave hosts')
-  parser_hosts.add_argument('-a', action='store_true', help='include marathon apps')
-  parser_hosts.add_argument('-t', action='store_true', help='include marathon task ids')
+  parser_hosts.add_argument('-a', action='store_true', help='include marathon app ids')
+#  parser_hosts.add_argument('-m', action='store_true', help='include marathon task ids')
 
-  parser_ps= subparsers.add_parser('ps', help='list marathon tasks; same as: app list -H')
+  parser_ps= subparsers.add_parser('ps', help='list marathon apps and tasks; same as: app list -H -p -m')
 
   args=parser.parse_args()
-  print (args)
+#  print (args)
 
   if args.command == "ps":
-    (args.command, args.app_command, args.H) = ('app', 'list', True)
+    (args.command, args.app_command, args.m, args.H, args.p, args.A) = ('app', 'list', True, True, True, False)
 
   if args.command == "ping":
     print( ping() )
 
   elif args.command == "app":
-    if args.app_command == "list" and args.H == False:
-      apps=get_apps()
+    if args.app_command == "list" and not (args.H or args.p or args.m or args.A):
+      apps=apps_get()
       for app in apps:
         print (app)
 
-    elif args.app_command == "list" and args.H == True:
-      [ apps, hosts ] =get_apps_hosts()
+    elif args.app_command == "list":
+      if args.A:
+        (args.H, args.p, args.m) = (True, True, True)
+      apps=apps_detailed_get()
       for app in apps:
-        print (app)
-        for h in apps[app]:
-          print ("  " + h)
+        out=app
+        for task in apps[app]['tasks']:
+          out += "\n "
+          if args.H:
+            out += " " + task['host']
+          if args.p:
+            if len(task['ports']) == 1:
+              out += ":" + str(task['ports'][0])
+            else:
+              out += ":["
+              for p in task['ports'][:-1]:
+                out+=str(p) + ","
+              out += str(task['ports'][-1]) + "]"
+          if args.m:
+            out += " " + task['id']
+        print (out)
 
     elif args.app_command == "get":
       app=app_get(args.id)
-      pprint.pprint(app)
+      if args.d:
+        pprint.pprint(app)
+      else:
+        print ("Marathon id: %s" % app['id'])
+        print ("Image: %s" % app['container']['docker']['image'])
+        print ("Instances: %d" % app['instances'])
+        print ("Cpus: %.1f" % app['cpus'])
+        print ("Memory: %d" % app['mem'])
+        print ("Disk: %.1f" % app['disk'])
+        out= str(app['tasksRunning']) + " running mesos tasks:"
+        for task in app['tasks']:
+            out += "\n "
+            out += " " + task['host']
+            if len(task['ports']) == 1:
+              out += ":" + str(task['ports'][0])
+            else:
+              out += ":["
+              for p in task['ports'][:-1]:
+                out+=str(p) + ","
+              out += str(task['ports'][-1]) + "]"
+            out += " " + task['id']
+        print (out)
 
     elif args.app_command == "create":
       json_file = open(args.json_file)
@@ -147,10 +188,10 @@ if __name__ == '__main__':
       pprint.pprint(x)
 
   elif args.command == "hosts":
-    [ apps, hosts ] =get_apps_hosts()
+    hosts = hosts_get()
     for host in hosts:
       print (host)
       if args.a == True:
-        for task in hosts[host]:
-           print ("  " + task)
-
+        for app in hosts[host]:
+           print ("  " + app.id)
+      ## todo args.m

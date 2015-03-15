@@ -2,61 +2,10 @@
 
 from os import environ
 from marathon import MarathonClient, MarathonApp
+from api_marathon import Marathon
 import argparse
 import json
 import pprint
-
-
-def app_get(id):
-  c = MarathonClient(environ['MARATHON'])
-  a=c.get_app(id)
-  x=a.to_json()
-  return(json.loads(x))
-
-def apps_get():
-  apps=[]
-  c = MarathonClient(environ['MARATHON'])
-  for app in c.list_apps():
-    apps.append(app.id)
-  return apps
-
-def apps_detailed_get():
-  apps={}
-  c = MarathonClient(environ['MARATHON'])
-  for app in c.list_apps():
-    apps[app.id]=app_get(app.id)
-  return apps
-  
-def hosts_get():
-  hosts={}
-  c = MarathonClient(environ['MARATHON'])
-  for app in c.list_apps():
-    for task in c.get_app(app.id).tasks:
-      host = task.host
-      if not host in hosts:
-        hosts[host]=[]
-      hosts[host].append(app)
-  return hosts
-
-def app_create( json_data ):
-  c = MarathonClient(environ['MARATHON'])
-  a = MarathonApp.from_json(json_data)
-  return c.create_app(a.id, a) 
-
-def app_update( json_data, force ):
-  c = MarathonClient(environ['MARATHON'])
-  a = MarathonApp.from_json(json_data)
-  return c.update_app(a.id, a, force)
-
-def app_delete (id, force):
-  c = MarathonClient(environ['MARATHON'])
-  return c.delete_app(id, force)
-
-
-def ping():
-  c = MarathonClient(environ['MARATHON'])
-  return (c.ping())
-
 
 
 if __name__ == '__main__':
@@ -95,28 +44,31 @@ if __name__ == '__main__':
   parser_hosts= subparsers.add_parser('hosts', help='list mesos-slave hosts')
   parser_hosts.add_argument('-a', action='store_true', help='include marathon app ids')
 #  parser_hosts.add_argument('-m', action='store_true', help='include marathon task ids')
+#  parser_hosts.add_argument('-A', action='store_true', help='show all info')
 
   parser_ps= subparsers.add_parser('ps', help='list marathon apps and tasks; same as: app list -H -p -m')
 
   args=parser.parse_args()
+
 #  print (args)
+  m = Marathon(environ['MARATHON'])
 
   if args.command == "ps":
     (args.command, args.app_command, args.m, args.H, args.p, args.A) = ('app', 'list', True, True, True, False)
 
   if args.command == "ping":
-    print( ping() )
+    print( m.ping() )
 
   elif args.command == "app":
     if args.app_command == "list" and not (args.H or args.p or args.m or args.A):
-      apps=apps_get()
+      apps=m.get_apps_list()
       for app in apps:
         print (app)
 
     elif args.app_command == "list":
       if args.A:
         (args.H, args.p, args.m) = (True, True, True)
-      apps=apps_detailed_get()
+      apps=m.get_apps_dict()
       for app in apps:
         out=app
         for task in apps[app]['tasks']:
@@ -136,7 +88,7 @@ if __name__ == '__main__':
         print (out)
 
     elif args.app_command == "get":
-      app=app_get(args.id)
+      app=m.get_app_dict(args.id)
       if args.d:
         pprint.pprint(app)
       else:
@@ -169,7 +121,7 @@ if __name__ == '__main__':
       if args.I:
         json_data['container']['docker']['image']=args.I
       pprint.pprint (json_data)
-      x=app_create(json_data)
+      x=m.create_app_from_json(json_data)
       pprint.pprint(x)
 
     elif args.app_command == "update":
@@ -180,15 +132,15 @@ if __name__ == '__main__':
         json_data['id']=args.i
       if args.I:
         json_data['container']['docker']['image']=args.I
-      x=app_update(json_data, args.f)
+      x=m.update_app_from_json(json_data, args.f)
       pprint.pprint(x)
 
     elif args.app_command == "delete":
-      x=app_delete(args.id, args.f)
+      x=m.delete_app(args.id, args.f)
       pprint.pprint(x)
 
   elif args.command == "hosts":
-    hosts = hosts_get()
+    hosts = m.get_hosts_dict()
     for host in hosts:
       print (host)
       if args.a == True:

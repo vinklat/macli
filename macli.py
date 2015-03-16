@@ -3,6 +3,8 @@
 from os import environ
 from marathon import MarathonClient, MarathonApp
 from api_marathon import Marathon
+#from api_cadvisor import Cadvisor
+#from hurry.filesize import size,alternative
 import argparse
 import json
 import pprint
@@ -42,9 +44,10 @@ if __name__ == '__main__':
   parser_app_get.add_argument('-d', action='store_true', help='show detailed info')
 
   parser_hosts= subparsers.add_parser('hosts', help='list mesos-slave hosts')
-  parser_hosts.add_argument('-a', action='store_true', help='include marathon app ids')
-#  parser_hosts.add_argument('-m', action='store_true', help='include marathon task ids')
-#  parser_hosts.add_argument('-A', action='store_true', help='show all info')
+  parser_hosts.add_argument('-a', action='store_true', help='include running marathon apps')
+  parser_hosts.add_argument('-m', action='store_true', help='include mesos task ids (=container names)')
+#  parser_hosts.add_argument('-c', action='store_true', help='include cadvisor system stats')
+  parser_hosts.add_argument('-A', action='store_true', help='show all info')
 
   parser_ps= subparsers.add_parser('ps', help='list marathon apps and tasks; same as: app list -H -p -m')
 
@@ -140,10 +143,20 @@ if __name__ == '__main__':
       pprint.pprint(x)
 
   elif args.command == "hosts":
+    if args.A:
+      (args.a, args.m) = (True,True)
     hosts = m.get_hosts_dict()
     for host in hosts:
-      print (host)
-      if args.a == True:
-        for app in hosts[host]:
-           print ("  " + app.id)
-      ## todo args.m
+      strout=host
+      print strout
+
+      if args.a or args.m:
+        for task in hosts[host]:
+          strout=" "
+          if args.a:
+            strout += (" " + task.app_id)
+          if args.m:
+            strout += (" " + task.id)
+#          if args.c:
+          print strout
+

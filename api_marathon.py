@@ -30,7 +30,7 @@ class Marathon (MarathonClient):
         host = task.host
         if not host in hosts:
           hosts[host]=[]
-        hosts[host].append(app)
+        hosts[host].append(task)
     return hosts
 
   def create_app_from_json(self, json_data ):

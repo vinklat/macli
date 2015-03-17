@@ -22,6 +22,7 @@ if __name__ == '__main__':
   parser_app_list.add_argument('-m', action='store_true', help='include mesos task ids')
   parser_app_list.add_argument('-H', action='store_true', help='include mesos-slave hosts')
   parser_app_list.add_argument('-p', action='store_true', help='include host ports')
+  parser_app_list.add_argument('-i', action='store_true', help='include image name')
   parser_app_list.add_argument('-A', action='store_true', help='show all info')
 
   parser_app_create = subparsers_app.add_parser('create', help='create and start an app')
@@ -64,16 +65,22 @@ if __name__ == '__main__':
 
   elif args.command == "app":
     if args.app_command == "list" and not (args.H or args.p or args.m or args.A):
-      apps=m.get_apps_list()
-      for app in apps:
-        print (app)
-
-    elif args.app_command == "list":
-      if args.A:
-        (args.H, args.p, args.m) = (True, True, True)
+      #apps=m.get_apps_list()
       apps=m.get_apps_dict()
       for app in apps:
         out=app
+        if args.i:
+          out += " [" + apps[app]['container']['docker']['image'] + "]"
+        print (out)
+
+    elif args.app_command == "list":
+      if args.A:
+        (args.H, args.p, args.m, args.i) = (True, True, True, True)
+      apps=m.get_apps_dict()
+      for app in apps:
+        out=app
+        if args.i:
+          out += " [" + apps[app]['container']['docker']['image'] + "]"
         for task in apps[app]['tasks']:
           out += "\n "
           if args.H:

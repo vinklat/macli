@@ -76,5 +76,3 @@ class Cadvisor:
     self.req_machine()
     self.req_host()
 
-
-

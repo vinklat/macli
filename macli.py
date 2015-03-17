@@ -58,7 +58,7 @@ if __name__ == '__main__':
   m = Marathon(environ['MARATHON'])
 
   if args.command == "ps":
-    (args.command, args.app_command, args.m, args.H, args.p, args.A) = ('app', 'list', True, True, True, False)
+    (args.command, args.app_command, args.m, args.H, args.p, args.i, args.A) = ('app', 'list', True, True, True, False, False)
 
   if args.command == "ping":
     print( m.ping() )

@@ -10,6 +10,14 @@ import json
 import pprint
 
 
+class mPrinter(pprint.PrettyPrinter):
+ def format(self, object, context, maxlevels, level):
+   if isinstance(object, unicode):
+     return (object.encode('utf8'), True, False)
+   return pprint.PrettyPrinter.format(self, object, context, maxlevels, level)
+
+
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Marathon command line tool')
   subparsers = parser.add_subparsers(dest='command', title='command')
@@ -43,12 +51,16 @@ if __name__ == '__main__':
   parser_app_get = subparsers_app.add_parser('get', help='get and view a single app')
   parser_app_get.add_argument('id', help='marathon app id')
   parser_app_get.add_argument('-d', action='store_true', help='show detailed info')
+  parser_app_get.add_argument('-j', action='store_true', help='export json format of app config')
 
   parser_hosts= subparsers.add_parser('hosts', help='list mesos-slave hosts')
   parser_hosts.add_argument('-a', action='store_true', help='include running marathon apps')
   parser_hosts.add_argument('-m', action='store_true', help='include mesos task ids (=container names)')
 #  parser_hosts.add_argument('-c', action='store_true', help='include cadvisor system stats')
   parser_hosts.add_argument('-A', action='store_true', help='show all info')
+
+  parser_dump = subparsers.add_parser('dump', help='backup config of all apps to one json')
+#  parser_import = subparsers.add_parser('import', help='recovery apps from dumped config')
 
   parser_ps= subparsers.add_parser('ps', help='list marathon apps and tasks; same as: app list -H -p -m')
 
@@ -98,10 +110,15 @@ if __name__ == '__main__':
         print (out)
 
     elif args.app_command == "get":
-      app=m.get_app_dict(args.id)
-      if args.d:
-        pprint.pprint(app)
+      if args.j:
+        json=m.get_app_json(args.id)
+        print(json)
+      elif args.d:
+        app=m.get_app_dict(args.id)
+        mPrinter().pprint(app)
       else:
+        app=m.get_app_dict(args.id)
+
         print ("Marathon id: %s" % app['id'])
         print ("Image: %s" % app['container']['docker']['image'])
         print ("Instances: %d" % app['instances'])
@@ -167,3 +184,5 @@ if __name__ == '__main__':
 #          if args.c:
           print strout
 
+  elif args.command == "dump":
+    print m.get_apps_json_config()

@@ -11,11 +11,32 @@ class Marathon (MarathonClient):
   def get_app_dict(self,id):
     return(json.loads(self.get_app_json(id)))
 
-  def get_apps_list(self):
-    apps=[]
+#  def get_app_json_config(self,id):
+#    app = self.get_app_dict(id)
+#    if 'tasks' in app:
+#      del app['tasks']
+#    if 'tasksiRunning' in app:
+#      del app['tasksRunning']
+#    return (json.dumps(app))
+
+  def get_apps_json_config(self):
+    n=0
+    d={}
     for app in MarathonClient.list_apps(self):
-      apps.append(app.id)
-    return apps
+      json_data=json.loads(app.to_json())
+      for p in 'tasks', 'tasksRunning', 'tasksStaged':
+        if p in json_data:
+          del json_data[p]
+      d[n]=json_data
+      n+=1
+    return(json.dumps(d))
+
+
+#  def get_apps_list(self):
+#    apps=[]
+#    for app in MarathonClient.list_apps(self):
+#      apps.append(app.id)
+#    return apps
 
   def get_apps_dict(self):
     apps={}

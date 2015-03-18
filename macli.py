@@ -2,12 +2,14 @@
 
 from os import environ
 from marathon import MarathonClient, MarathonApp
+from marathon.exceptions import *
 from api_marathon import Marathon
 #from api_cadvisor import Cadvisor
 #from hurry.filesize import size,alternative
 import argparse
 import json
 import pprint
+from termcolor import colored
 
 
 class mPrinter(pprint.PrettyPrinter):
@@ -17,12 +19,11 @@ class mPrinter(pprint.PrettyPrinter):
    return pprint.PrettyPrinter.format(self, object, context, maxlevels, level)
 
 
-
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Marathon command line tool')
+  parser.add_argument('-M', '--server', metavar="url", help='marathon server url address')
+  parser.add_argument('-nc', '--nocolor', action='store_true', help='do not use colors')
   subparsers = parser.add_subparsers(dest='command', title='command')
-
-  parser_ping= subparsers.add_parser('ping', help='ping the marathon server')
 
   parser_app = subparsers.add_parser('app', help='manage marathon apps')
   subparsers_app = parser_app.add_subparsers(dest='app_command', title='app_command')
@@ -53,32 +54,47 @@ if __name__ == '__main__':
   parser_app_get.add_argument('-d', action='store_true', help='show detailed info')
   parser_app_get.add_argument('-j', action='store_true', help='export json format of app config')
 
-  parser_hosts= subparsers.add_parser('hosts', help='list mesos-slave hosts')
-  parser_hosts.add_argument('-a', action='store_true', help='include running marathon apps')
-  parser_hosts.add_argument('-m', action='store_true', help='include mesos task ids (=container names)')
-#  parser_hosts.add_argument('-c', action='store_true', help='include cadvisor system stats')
-  parser_hosts.add_argument('-A', action='store_true', help='show all info')
+  parser_host= subparsers.add_parser('host', help='manage mesos-slave hosts')
+  subparsers_host = parser_host.add_subparsers(dest='host_command', title='host_command')
+  parser_host_list = subparsers_host.add_parser('list', help='list mesos-slave hosts')
+  parser_host_list.add_argument('-a', action='store_true', help='include running marathon apps')
+  parser_host_list.add_argument('-m', action='store_true', help='include mesos task ids (=container names)')
+#  parser_host_list.add_argument('-c', action='store_true', help='include cadvisor system stats')
+  parser_host_list.add_argument('-A', action='store_true', help='show all info')
 
-  parser_dump = subparsers.add_parser('dump', help='backup config of all apps to one json')
-#  parser_import = subparsers.add_parser('import', help='recovery apps from dumped config')
+  parser_marathon = subparsers.add_parser('marathon', help='manage marathon server')
+  subparsers_marathon = parser_marathon.add_subparsers(dest='marathon_command', title='marathon_command')
+  parser_marathon_ping= subparsers_marathon.add_parser('ping', help='ping the marathon server')
+  parser_marathon_dump = subparsers_marathon.add_parser('dump', help='backup config of all apps to one json')
+#  parser_import = subparsers.add_parser('import', help='recovery apps from backup json (dump)')
 
-  parser_ps= subparsers.add_parser('ps', help='list marathon apps and tasks; same as: app list -H -p -m')
+#  parser_ps= subparsers.add_parser('ps', help='list marathon apps and tasks; same as: app list -H -p -m')
 
   args=parser.parse_args()
 
-#  print (args)
-  m = Marathon(environ['MARATHON'])
+  #print (args)
 
-  if args.command == "ps":
-    (args.command, args.app_command, args.m, args.H, args.p, args.i, args.A) = ('app', 'list', True, True, True, False, False)
+  if not args.server:
+    if not 'MARATHON' in environ:
+      print ("error: marathon server not configured.\nUse -M option or MARATHON environment variable.")
+      exit (1)
+    else:
+      args.server = environ['MARATHON']
 
-  if args.command == "ping":
-    print( m.ping() )
+  m = Marathon(args.server)
 
-  elif args.command == "app":
+#  if args.command == "ps":
+#    (args.command, args.app_command, args.m, args.H, args.p, args.i, args.A) = ('app', 'list', True, True, True, False, False)
+
+
+  if args.command == "app":
     if args.app_command == "list" and not (args.H or args.p or args.m or args.A):
-      #apps=m.get_apps_list()
-      apps=m.get_apps_dict()
+      try:
+        apps=m.get_apps_dict()
+      except (InternalServerError, InvalidChoiceError, MarathonError, MarathonHttpError, NotFoundError) as e:
+        print (e)
+        exit (1)
+
       for app in apps:
         out=app
         if args.i:
@@ -90,7 +106,10 @@ if __name__ == '__main__':
         (args.H, args.p, args.m, args.i) = (True, True, True, True)
       apps=m.get_apps_dict()
       for app in apps:
-        out=app
+        if args.nocolor:
+          out=app
+        else:
+          out = colored( app, 'green')
         if args.i:
           out += " [" + apps[app]['container']['docker']['image'] + "]"
         for task in apps[app]['tasks']:
@@ -149,7 +168,7 @@ if __name__ == '__main__':
         json_data['container']['docker']['image']=args.I
       pprint.pprint (json_data)
       x=m.create_app_from_json(json_data)
-      pprint.pprint(x)
+      mPrinter().pprint(x)
 
     elif args.app_command == "update":
       json_file = open(args.json_file)
@@ -160,29 +179,43 @@ if __name__ == '__main__':
       if args.I:
         json_data['container']['docker']['image']=args.I
       x=m.update_app_from_json(json_data, args.f)
-      pprint.pprint(x)
+      mPrinter().pprint(x)
 
     elif args.app_command == "delete":
       x=m.delete_app(args.id, args.f)
-      pprint.pprint(x)
+      mPrinter().pprint(x)
 
-  elif args.command == "hosts":
-    if args.A:
-      (args.a, args.m) = (True,True)
-    hosts = m.get_hosts_dict()
-    for host in hosts:
-      strout=host
-      print strout
+  elif args.command == "host":
+    if args.host_command == "list":
+      if args.A:
+        (args.a, args.m) = (True,True)
+     
+      try:
+        hosts = m.get_hosts_dict()
+      except (InternalServerError, InvalidChoiceError, MarathonError, MarathonHttpError, NotFoundError) as e:
+        print (e)
+        exit (1)
+      
+      for host in hosts:
+        if args.nocolor or not (args.a or args.m):
+          strout = host
+        else:
+          strout = colored( host, 'green')
+        print strout
 
-      if args.a or args.m:
-        for task in hosts[host]:
-          strout=" "
-          if args.a:
-            strout += (" " + task.app_id)
-          if args.m:
-            strout += (" " + task.id)
-#          if args.c:
-          print strout
+        if args.a or args.m:
+          for task in hosts[host]:
+            strout=" "
+            if args.a:
+              strout += (" " + task.app_id)
+            if args.m:
+              strout += (" " + task.id)
+#            if args.c:
+            print strout
 
-  elif args.command == "dump":
-    print m.get_apps_json_config()
+  elif args.command == "marathon":
+    if args.marathon_command=="ping":
+      print( m.ping() )
+    elif args.marathon_command=="dump":
+      print m.get_apps_json_config()
+

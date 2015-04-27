@@ -52,6 +52,7 @@ if __name__ == '__main__':
   parser_app_get = subparsers_app.add_parser('get', help='get and view a single app')
   parser_app_get.add_argument('id', help='marathon app id')
   parser_app_get.add_argument('-d', action='store_true', help='show detailed info')
+  parser_app_get.add_argument('-J', action='store_true', help='export json format of app state')
   parser_app_get.add_argument('-j', action='store_true', help='export json format of app config')
 
   parser_host= subparsers.add_parser('host', help='manage mesos-slave hosts')
@@ -66,7 +67,8 @@ if __name__ == '__main__':
   subparsers_marathon = parser_marathon.add_subparsers(dest='marathon_command', title='marathon_command')
   parser_marathon_ping= subparsers_marathon.add_parser('ping', help='ping the marathon server')
   parser_marathon_dump = subparsers_marathon.add_parser('dump', help='backup config of all apps to one json')
-#  parser_import = subparsers.add_parser('import', help='recovery apps from backup json (dump)')
+  parser_marathon_import = subparsers.add_parser('import', help='recovery apps from backup json (dump)')
+  parser_marathon_import.add_argument('-i', metavar='id', help='specified app only')
 
 #  parser_ps= subparsers.add_parser('ps', help='list marathon apps and tasks; same as: app list -H -p -m')
 

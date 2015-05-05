@@ -15,7 +15,7 @@ command line tool for marathon
   export MARATHON=http://marathon:8080
   macli app list
   ```
-  ...do the same as above
+  ...it does the same as above
 
 * detailed list:
 
@@ -42,5 +42,8 @@ command line tool for marathon
   ```
   macli app get /myapp -j
   ```
+
+#### Create app
+
 
 /todo - under construction/

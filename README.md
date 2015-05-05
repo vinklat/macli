@@ -19,7 +19,7 @@ then you get stand-alone binary ```macli``` in ```dist``` directory (using PyIns
   ```
   macli -M http://marathon:8080 app list
   ```
-* or you can save a bit of unnecessary work, set marathon server into environment variable:
+* or you can save a bit of unnecessary work, set marathon server url in the environment variable:
   
   ```
   export MARATHON=http://marathon:8080
@@ -67,7 +67,7 @@ then you get stand-alone binary ```macli``` in ```dist``` directory (using PyIns
   macli app create myapp.json -i /newapp
   ```
   
-  useful for testing app with no impact but using the same json file.
+  useful for testing an app with no impact using existing json file.
 
 * create and start an app, force image different than in the json file 
 
@@ -88,12 +88,23 @@ then you get stand-alone binary ```macli``` in ```dist``` directory (using PyIns
   
   (```-i``` and ```-I``` parameters does the same as for create)
   
-* force apply even if a previous deployment is in progress
+* force apply even if previous deployment is in progress
 
   ```
   macli app create /myapp myapp.json -f
   ```
 
+#### Destroy an app
 
+* destroy an application. All data about that application will be deleted.
+
+  ```
+  macli app delete /myapp
+  ```
+* force apply even if a deployment is in progress
+
+  ```
+  macli app delete /myapp -f
+  ``` 
 
 /todo - under construction/

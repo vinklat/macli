@@ -32,7 +32,7 @@ then you get stand-alone binary ```macli``` in ```dist``` directory (using PyIns
 * list of all running apps: 
 
   ```
-  macli pp list
+  macli app list
   ```
   
 * detailed list:
@@ -115,4 +115,20 @@ then you get stand-alone binary ```macli``` in ```dist``` directory (using PyIns
   macli app delete /myapp -f
   ``` 
 
-/todo - under construction/
+### Hosts overview
+
+* list mesos-slave hosts
+
+  ```
+  macli host list
+  ``` 
+  
+  Note: there are no empty hosts (with no tasks) in output.
+
+* more detailed
+
+  ```
+  macli host list -A
+  ``` 
+  includes app ids and mesos task ids which runs on the host. You can select each separately using ```-m``` or ```-a``` parameters.
+

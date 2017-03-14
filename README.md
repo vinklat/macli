@@ -11,7 +11,7 @@ make
 ```
 then you get stand-alone binary ```macli``` in ```dist``` directory (using PyInstaller). Alternatively you can run original ```./macli.py```.
 
-##Examples
+## Examples
 ### Test the connection
 * ping the marathon server
 

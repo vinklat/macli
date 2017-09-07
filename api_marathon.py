@@ -54,6 +54,15 @@ class Marathon (MarathonClient):
         hosts[host].append(task)
     return hosts
 
+  def kill_t(self, task_id):
+#    MarathonClient.kill_task(self,app_id, task_id, False, False)
+    return MarathonClient.kill_given_tasks(self, task_id)
+#    return 0
+
+#  def kill_h(self, app_id, hostname):
+#    MarathonClient.kill_tasks(self,app_id, False, False, hostname, 0, 0)
+#    return 0
+
   def create_app_from_json(self, json_data ):
     a = MarathonApp.from_json(json_data)
     return MarathonClient.create_app(self, a.id, a)

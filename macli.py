@@ -63,6 +63,9 @@ if __name__ == '__main__':
 #  parser_host_list.add_argument('-c', action='store_true', help='include cadvisor system stats')
   parser_host_list.add_argument('-A', action='store_true', help='show all info')
 
+  parser_host_discharge = subparsers_host.add_parser('discharge', help='mesos-slave host decommision')
+  parser_host_discharge.add_argument('hostname', help='mesos-slave hostname')
+
   parser_marathon = subparsers.add_parser('marathon', help='manage marathon server')
   subparsers_marathon = parser_marathon.add_subparsers(dest='marathon_command', title='marathon_command')
   parser_marathon_ping= subparsers_marathon.add_parser('ping', help='ping the marathon server')
@@ -188,6 +191,34 @@ if __name__ == '__main__':
       mPrinter().pprint(x)
 
   elif args.command == "host":
+    if args.host_command == "discharge":
+
+      try:
+        hosts = m.get_hosts_dict()
+      except (InternalServerError, InvalidChoiceError, MarathonError, MarathonHttpError, NotFoundError) as e:
+        print (e)
+        exit (1)
+
+      if (not args.hostname in hosts):
+        print ("There are no tasks")
+        exit (1)
+
+      tasks=[]
+      if args.hostname:
+          for task in hosts[args.hostname]:
+            strout=""
+#            strout=" kill"
+            strout += (" " + task.app_id)
+#            strout += (" " + task.id)
+            print strout
+            tasks.append(task.id)
+
+      print ("KILL " + str(tasks))
+
+      x=m.kill_t(tasks)
+#      if (x == False):
+#        print ("error")
+
     if args.host_command == "list":
       if args.A:
         (args.a, args.m) = (True,True)

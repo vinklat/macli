@@ -6,10 +6,9 @@ It requires python + modules listed in requirements.txt file.
 ```
 git clone git@github.com:vinklat/macli.git
 cd macli
-pip install -r requirements.txt
 make
 ```
-then you get stand-alone binary ```macli``` in ```dist``` directory (using PyInstaller). Alternatively you can run original ```./macli.py```.
+then you get stand-alone binary ```macli``` in ```dist``` directory (using virtualenv and PyInstaller). Alternatively you can install ```pip install -r requirements.txt``` and  run original ```./macli.py```.
 
 ## Examples
 ### Test the connection

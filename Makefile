@@ -11,4 +11,4 @@ venv/bin/activate: requirements.txt
 	touch venv/bin/activate
 
 clean:
-	rm -fR build dist *pyc *spec venv 
+	rm -fR build dist *pyc *spec venv __pycache__ 

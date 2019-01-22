@@ -260,14 +260,14 @@ if __name__ == '__main__':
                     #            strout=" kill"
                     strout += (" " + task.app_id)
                     #            strout += (" " + task.id)
-                    print strout
+                    print(strout)
                     tasks.append(task.id)
 
             print("KILL " + str(tasks))
 
             x = m.kill_t(tasks)
 #      if (x == False):
-#        print ("error")
+#        print("error")
 
         if args.host_command == "list":
             if args.A:
@@ -285,7 +285,7 @@ if __name__ == '__main__':
                     strout = host
                 else:
                     strout = colored(host, 'green')
-                print strout
+                print(strout)
 
                 if args.a or args.m:
                     for task in hosts[host]:
@@ -295,10 +295,10 @@ if __name__ == '__main__':
                         if args.m:
                             strout += (" " + task.id)
 #            if args.c:
-                        print strout
+                        print(strout)
 
     elif args.command == "marathon":
         if args.marathon_command == "ping":
             print(m.ping())
         elif args.marathon_command == "dump":
-            print m.get_apps_json_config()
+            print(m.get_apps_json_config())

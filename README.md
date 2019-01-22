@@ -1,7 +1,7 @@
 # macli
 command line tool for marathon
 ## Install
-It requires python + modules listed in requirements.txt file.   
+Prerequisites: ```python3, pip3``` installed
 
 ```
 git clone git@github.com:vinklat/macli.git

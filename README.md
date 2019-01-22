@@ -1,6 +1,6 @@
 # macli
 command line tool for marathon
-##Install
+## Install
 It requires python + modules listed in requirements.txt file.   
 
 ```

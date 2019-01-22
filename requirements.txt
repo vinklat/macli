@@ -1,3 +1,4 @@
 marathon==0.8.14
 termcolor
 PyInstaller
+virtualenv
